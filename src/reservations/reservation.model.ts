@@ -14,5 +14,5 @@ export class Reservation {
 export type ReservationDocument = HydratedDocument<Reservation>;
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);
 
-// Compound unique index on room and reservationDay
-ReservationSchema.index({ room: 1, reservationDay: 1 }, { unique: true });
+// Compound unique index on room and reservationDate
+ReservationSchema.index({ room: 1, reservationDate: 1 }, { unique: true });
