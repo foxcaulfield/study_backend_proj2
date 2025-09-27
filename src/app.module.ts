@@ -10,8 +10,8 @@ import { MongooseModule, MongooseModuleFactoryOptions } from "@nestjs/mongoose";
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
+			envFilePath: "./.env",
 		}),
-		// MongooseModule.forRoot("mongodb://root:example@localhost:27017/default_db"),
 		MongooseModule.forRootAsync({
 			imports: [ConfigModule],
 			inject: [ConfigService],

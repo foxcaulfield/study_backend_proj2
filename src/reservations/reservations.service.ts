@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Reservation, ReservationDocument } from "./reservation.model";
@@ -52,6 +52,31 @@ export class ReservationsService {
 	}
 
 	public async update(id: string, dto: UpdateReservationDto): Promise<ReservationDocument> {
+		if (!dto.reservationDate) {
+			throw new BadRequestException("Reservation date is required");
+		}
+
+		const reservationDate = new Date(dto.reservationDate);
+		const startOfDay = new Date(
+			reservationDate.getFullYear(),
+			reservationDate.getMonth(),
+			reservationDate.getDate(),
+		);
+		const endOfDay = new Date(startOfDay);
+		endOfDay.setDate(endOfDay.getDate() + 1);
+		// Check for existing reservation
+		const existing = await this.reservationModel.findOne({
+			room: new Types.ObjectId(dto.room),
+			reservationDate: {
+				$gte: startOfDay,
+				$lt: endOfDay,
+			},
+		});
+
+		if (existing) {
+			throw new ConflictException(`Room ${dto.room} is already reserved on ${dto.reservationDate.toString()}`);
+		}
+
 		const updatedReservation = await this.reservationModel.findByIdAndUpdate(
 			new Types.ObjectId(id),
 			{ $set: dto },
