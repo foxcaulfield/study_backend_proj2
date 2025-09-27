@@ -52,29 +52,35 @@ export class ReservationsService {
 	}
 
 	public async update(id: string, dto: UpdateReservationDto): Promise<ReservationDocument> {
-		if (!dto.reservationDate) {
-			throw new BadRequestException("Reservation date is required");
+		// Validate ID format
+		if (!Types.ObjectId.isValid(id)) {
+			throw new BadRequestException("Invalid reservation ID");
 		}
+		const objectId = new Types.ObjectId(id);
 
-		const reservationDate = new Date(dto.reservationDate);
-		const startOfDay = new Date(
-			reservationDate.getFullYear(),
-			reservationDate.getMonth(),
-			reservationDate.getDate(),
-		);
-		const endOfDay = new Date(startOfDay);
-		endOfDay.setDate(endOfDay.getDate() + 1);
-		// Check for existing reservation
-		const existing = await this.reservationModel.findOne({
-			room: new Types.ObjectId(dto.room),
-			reservationDate: {
-				$gte: startOfDay,
-				$lt: endOfDay,
-			},
-		});
+		// Check for reservationDate if provided in DTO
+		if (dto.reservationDate) {
+			const reservationDate = new Date(dto.reservationDate);
+			const startOfDay = new Date(
+				reservationDate.getFullYear(),
+				reservationDate.getMonth(),
+				reservationDate.getDate(),
+			);
+			const endOfDay = new Date(startOfDay);
+			endOfDay.setDate(endOfDay.getDate() + 1);
 
-		if (existing) {
-			throw new ConflictException(`Room ${dto.room} is already reserved on ${dto.reservationDate.toString()}`);
+			// Check for conflicting reservations, excluding the current one
+			const existing = await this.reservationModel.findOne({
+				_id: { $ne: objectId }, // Exclude current reservation
+				room: new Types.ObjectId(dto.room || (await this.reservationModel.findById(id))?.room),
+				reservationDate: { $gte: startOfDay, $lt: endOfDay },
+			});
+
+			if (existing) {
+				throw new ConflictException(
+					`Room ${dto.room || "provided"} is already reserved on ${dto.reservationDate.toString()}`,
+				);
+			}
 		}
 
 		const updatedReservation = await this.reservationModel.findByIdAndUpdate(
@@ -99,7 +105,10 @@ export class ReservationsService {
 	}
 
 	public async getById(id: string): Promise<ReservationDocument | null> {
-		const reservation = await this.reservationModel.findById(new Types.ObjectId(id));
+		if (!Types.ObjectId.isValid(id)) {
+			throw new BadRequestException("Invalid reservation ID");
+		}
+		const reservation = await this.reservationModel.findById(new Types.ObjectId(id)).populate("room");
 		if (!reservation) {
 			throw new NotFoundException(`Reservation with ID ${id} not found`);
 		}
@@ -108,7 +117,8 @@ export class ReservationsService {
 
 	public async getAll(filter: { limit?: number }): Promise<ReservationDocument[]> {
 		return this.reservationModel
-			.find(filter)
+			.find()
+			.populate("room")
 			.limit(filter.limit ?? 10)
 			.exec();
 	}
