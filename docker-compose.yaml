@@ -1,0 +1,30 @@
+services:
+    mongo:
+        image: mongo:8-noble
+        restart: always
+        container_name: mongo_container
+        env_file: ./.env
+        ports:
+            - 27017:27017
+        volumes:
+            - ./mongo-data:/data/db
+        command: --wiredTigerCacheSizeGB 1.5
+        # networks:
+        #     - backend-network
+
+    mongo-express:
+        image: mongo-express
+        restart: always
+        ports:
+            - 8081:8081
+        env_file: ./.env
+        depends_on:
+            - mongo
+
+        environment:
+            ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+            ME_CONFIG_BASICAUTH_ENABLED: true
+            ME_CONFIG_BASICAUTH_USERNAME: root
+            ME_CONFIG_BASICAUTH_PASSWORD: example
+# networks:
+#     backend-network:
