@@ -1,12 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
+import { RootFilterQuery, Types } from "mongoose";
 import { Room, RoomDocument, RoomStatusEnum, type RoomModelType } from "./room.model";
 import { CreateRoomDto } from "./dto/create-room.dto";
-import { ResponseRoomDto } from "./dto/response-room.dto";
-import { plainToInstance } from "class-transformer";
-import { FilterRoomDto } from "./dto/filter-room.dto";
-import { RootFilterQuery, Types } from "mongoose";
 import { UpdateRoomDto } from "./dto/update-room.dto";
+import { FilterRoomDto } from "./dto/filter-room.dto";
+// import { ResponseRoomDto } from "./dto/response-room.dto";
+import { plainToInstance } from "class-transformer";
+import { ResponseRoomDto } from "./dto/response-room.dto";
 
 @Injectable()
 export class RoomsService {
@@ -55,6 +56,7 @@ export class RoomsService {
 			this.roomModel.find(query).sort({ roomNumber: 1 }).skip(skip).limit(limitValue).exec(),
 			this.roomModel.countDocuments(query).exec(),
 		]);
+
 		return {
 			rooms,
 			total,
@@ -75,6 +77,17 @@ export class RoomsService {
 	}
 
 	public async update(id: string, dto: UpdateRoomDto): Promise<RoomDocument> {
+		/* if (dto.roomNumber) {
+			const existingRoom = await this.roomModel.findOne({
+				roomNumber: dto.roomNumber,
+				_id: { $ne: new Types.ObjectId(id) },
+			});
+
+			if (existingRoom) {
+				throw new ConflictException(`Room with number ${dto.roomNumber} already exists`);
+			}
+		} */
+
 		const updatedRoom = await this.roomModel.findByIdAndUpdate(
 			new Types.ObjectId(id),
 			{ $set: dto },
@@ -89,19 +102,23 @@ export class RoomsService {
 	}
 
 	public async remove(id: string): Promise<void> {
-		const result = await this.roomModel.findOneAndDelete(new Types.ObjectId(id));
+		const result = await this.roomModel.findByIdAndDelete(new Types.ObjectId(id));
 
 		if (!result) {
 			throw new NotFoundException(`Room with ID ${id} not found`);
 		}
 	}
 
+	// public async findByType(roomType: RoomType): Promise<RoomDocument[]> {
+	// 	return this.roomModel.findByType(roomType);
+	// }
+
 	public async findAvailableRooms(): Promise<RoomDocument[]> {
 		return this.roomModel
 			.find({
 				roomStatus: RoomStatusEnum.AVAILABLE,
 			})
-			.sort({ roomStatus: 1 })
+			.sort({ roomNumber: 1 })
 			.exec();
 	}
 
@@ -120,6 +137,51 @@ export class RoomsService {
 			query.hasSeaView = filters.hasSeaView;
 		}
 
+		// if (filters.minOccupancy) {
+		// 	query.maxOccupancy = { $gte: filters.minOccupancy };
+		// }
+
+		// if (filters.maxPrice) {
+		// 	query["pricing.basePrice"] = { $lte: filters.maxPrice };
+		// }
+
 		return query;
 	}
+
+	// public async update(id: string, dto: UpdateRoomDto): Promise<RoomDocument> {
+	// 	const updatedRoom = await this.roomModel.findByIdAndUpdate(
+	// 		new Types.ObjectId(id),
+	// 		{ $set: dto },
+	// 		{ new: true, runValidators: true },
+	// 	);
+
+	// 	if (!updatedRoom) {
+	// 		throw new NotFoundException(`Room with ID ${id} not found`);
+	// 	}
+
+	// 	return updatedRoom;
+	// }
+
+	// public async delete(id: string): Promise<RoomDocument | null> {
+	// 	const deletedRoom = await this.roomModel.findByIdAndDelete(new Types.ObjectId(id));
+	// 	if (!deletedRoom) {
+	// 		throw new NotFoundException(`Room with ID ${id} not found`);
+	// 	}
+	// 	return deletedRoom;
+	// }
+
+	// public async getById(id: string): Promise<RoomDocument | null> {
+	// 	const room = await this.roomModel.findById(new Types.ObjectId(id));
+	// 	if (!room) {
+	// 		throw new NotFoundException(`Room with ID ${id} not found`);
+	// 	}
+	// 	return room;
+	// }
+
+	// public async getAll(filter: { limit?: number }): Promise<RoomDocument[]> {
+	// 	return this.roomModel
+	// 		.find(filter)
+	// 		.limit(filter.limit ?? 10)
+	// 		.exec();
+	// }
 }
