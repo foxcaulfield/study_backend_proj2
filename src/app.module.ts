@@ -3,6 +3,8 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { MongooseModule, MongooseModuleFactoryOptions } from "@nestjs/mongoose";
+import { RoomsModule } from "./rooms/rooms.module";
+import { ReservationsModule } from "./reservations/reservations.module";
 
 @Module({
 	imports: [
@@ -27,6 +29,8 @@ import { MongooseModule, MongooseModuleFactoryOptions } from "@nestjs/mongoose";
 				};
 			},
 		}),
+		RoomsModule,
+		ReservationsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
