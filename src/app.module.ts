@@ -1,6 +1,4 @@
 import { Module } from "@nestjs/common";
-import { ReservationsModule } from "./reservations/reservations.module";
-import { RoomsModule } from "./rooms/rooms.module";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { ConfigModule, ConfigService } from "@nestjs/config";
@@ -29,8 +27,6 @@ import { MongooseModule, MongooseModuleFactoryOptions } from "@nestjs/mongoose";
 				};
 			},
 		}),
-		ReservationsModule,
-		RoomsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
