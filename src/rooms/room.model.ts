@@ -33,9 +33,9 @@ export enum RoomStatusEnum {
 @Schema({
 	strict: true,
 	timestamps: true,
-	toJSON: {
-		virtuals: false,
-	},
+	// toJSON: {
+	// 	virtuals: false,
+	// },
 })
 export class Room {
 	@Prop({
@@ -58,13 +58,21 @@ export class Room {
 	@Prop({
 		type: String,
 		enum: RoomStatusEnum,
-		default: RoomStatusEnum.AVAILABLE,
+		default: RoomStatusEnum.MAINTENANCE,
 	})
 	public roomStatus!: RoomStatusEnum;
 
 	@Prop(Boolean)
 	public hasSeaView!: boolean;
 
+	// @Prop(String)
+	public id?: string;
+
+	// @Prop(Date)
+	public createdAt?: Date;
+
+	// @Prop(Date)
+	public updatedAt?: Date;
 	// @Prop({
 	// 	type: Number,
 	// 	min: 1,
@@ -103,5 +111,5 @@ export class Room {
 	// }
 }
 export type RoomDocument = HydratedDocument<Room>;
-export type RoomModelType = Model<RoomDocument> & typeof Room;
+export type RoomModelType = Model<RoomDocument>;
 export const RoomSchema = SchemaFactory.createForClass(Room);

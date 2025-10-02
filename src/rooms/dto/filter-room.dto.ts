@@ -8,7 +8,7 @@ export class FilterRoomDto {
 
 	@IsEnum(RoomStatusEnum)
 	@IsOptional()
-	public status?: RoomStatusEnum;
+	public roomStatus?: RoomStatusEnum;
 
 	//   @Type((): typeof Boolean => Boolean)
 	@IsBoolean()
