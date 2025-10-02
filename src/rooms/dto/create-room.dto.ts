@@ -5,7 +5,6 @@ import { RoomTypeEnum } from "../room.model";
 //   @IsBoolean()
 //   @IsOptional()
 //   public isPremium?: boolean;
-
 //   @IsOptional()
 //   public description?: string;
 // }
