@@ -13,7 +13,11 @@ export class Reservation {
 		// min: new Date(date.setHours(0, 0, 0, 0)),
 		set: (date: Date): Date => new Date(date.setHours(0, 0, 0, 0)),
 		validate: {
-			validator: (date: Date): boolean => date >= new Date(),
+			validator: (date: Date): boolean => {
+				const todayMidnight = new Date(new Date().setHours(0, 0, 0, 0));
+				// today.setUTCHours(0, 0, 0, 0);
+				return date >= todayMidnight;
+			},
 			message: "Date can't be in the past",
 		},
 	})
@@ -25,7 +29,12 @@ export class Reservation {
 		// min: new Date(date.setHours(0, 0, 0, 0)),
 		set: (date: Date): Date => new Date(date.setHours(0, 0, 0, 0)),
 		validate: {
-			validator: (date: Date): boolean => date >= new Date(),
+			validator: (date: Date): boolean => {
+				const todayMidnight = new Date(new Date().setHours(0, 0, 0, 0));
+				// const today = new Date();
+				// today.setUTCHours(0, 0, 0, 0);
+				return date >= todayMidnight;
+			},
 			message: "Date can't be in the past",
 		},
 	})
@@ -44,7 +53,7 @@ ReservationSchema.index({
 });
 // Pre-save hook example for validation
 ReservationSchema.pre("save", function (next): void {
-	if (this.checkInDate >= this.checkOutDate) {
+	if (this.checkInDate > this.checkOutDate) {
 		return next(new Error("Start date must be before end date"));
 	}
 	next();

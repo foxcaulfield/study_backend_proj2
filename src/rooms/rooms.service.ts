@@ -8,13 +8,26 @@ import { FilterRoomDto } from "./dto/filter-room.dto";
 // import { ResponseRoomDto } from "./dto/response-room.dto";
 import { plainToInstance } from "class-transformer";
 import { ResponseRoomDto } from "./dto/response-room.dto";
+import { PaginatedResponse } from "./room.types";
 
 @Injectable()
 export class RoomsService {
+	private toResponseDto(entity: RoomDocument): ResponseRoomDto;
+	private toResponseDto(entity: RoomDocument[]): ResponseRoomDto[];
+	private toResponseDto(entity: RoomDocument | RoomDocument[]): ResponseRoomDto | ResponseRoomDto[] {
+		return plainToInstance(ResponseRoomDto, entity, {
+			excludeExtraneousValues: true,
+		});
+	}
+
 	public constructor(
 		@InjectModel(Room.name)
 		private readonly roomModel: RoomModelType,
 	) {}
+
+	public async checkRoomExists(id: string): Promise<boolean> {
+		return !!(await this.roomModel.exists({ _id: new Types.ObjectId(id) }));
+	}
 
 	public async create(dto: CreateRoomDto): Promise<ResponseRoomDto> {
 		const existingRoom = await this.roomModel
@@ -32,20 +45,12 @@ export class RoomsService {
 			validateBeforeSave: true,
 		});
 
-		const responseDto = plainToInstance(ResponseRoomDto, roomInstance, {
-			excludeExtraneousValues: true,
-		});
+		const responseDto = this.toResponseDto(roomInstance);
 
 		return responseDto;
 	}
 
-	public async findAll(filterDto: FilterRoomDto): Promise<{
-		rooms: RoomDocument[];
-		total: number;
-		page: number;
-		limit: number;
-		pages: number;
-	}> {
+	public async findAll(filterDto: FilterRoomDto): Promise<PaginatedResponse> {
 		const { page, limit, ...filters } = filterDto;
 		const skip = page === undefined || limit === undefined ? 0 : (page - 1) * limit;
 		const limitValue = limit ?? 10;
@@ -58,7 +63,7 @@ export class RoomsService {
 		]);
 
 		return {
-			rooms,
+			rooms: this.toResponseDto(rooms),
 			total,
 			page: pageValue,
 			limit: limitValue,
@@ -66,17 +71,17 @@ export class RoomsService {
 		};
 	}
 
-	public async findById(id: string): Promise<RoomDocument> {
+	public async findById(id: string): Promise<ResponseRoomDto> {
 		const room = await this.roomModel.findById(new Types.ObjectId(id));
 
 		if (!room) {
 			throw new NotFoundException(`Room with ID ${id} not found`);
 		}
 
-		return room;
+		return this.toResponseDto(room);
 	}
 
-	public async update(id: string, dto: UpdateRoomDto): Promise<RoomDocument> {
+	public async update(id: string, dto: UpdateRoomDto): Promise<ResponseRoomDto> {
 		/* if (dto.roomNumber) {
 			const existingRoom = await this.roomModel.findOne({
 				roomNumber: dto.roomNumber,
@@ -98,7 +103,7 @@ export class RoomsService {
 			throw new NotFoundException(`Room with ID ${id} not found`);
 		}
 
-		return updatedRoom;
+		return this.toResponseDto(updatedRoom);
 	}
 
 	public async remove(id: string): Promise<void> {
@@ -113,24 +118,28 @@ export class RoomsService {
 	// 	return this.roomModel.findByType(roomType);
 	// }
 
-	public async findAvailableRooms(): Promise<RoomDocument[]> {
-		return this.roomModel
-			.find({
-				roomStatus: RoomStatusEnum.AVAILABLE,
-			})
-			.sort({ roomNumber: 1 })
-			.exec();
+	public async findAvailableRooms(): Promise<PaginatedResponse> {
+		// const result = await this.roomModel
+		// 	.find({
+		// 		roomStatus: RoomStatusEnum.AVAILABLE,
+		// 	})
+		// 	.sort({ roomNumber: 1 })
+		// 	.exec();
+
+		// return this.toResponseDto(result);
+
+		return this.findAll({ roomStatus: RoomStatusEnum.AVAILABLE });
 	}
 
-	private buildFilterQuery(filters: Partial<FilterRoomDto>): RootFilterQuery<RoomDocument> {
-		const query: RootFilterQuery<RoomDocument> = {};
+	private buildFilterQuery(filters: Partial<FilterRoomDto>): RootFilterQuery<ResponseRoomDto> {
+		const query: RootFilterQuery<ResponseRoomDto> = {};
 
 		if (filters.roomType) {
 			query.roomType = filters.roomType;
 		}
 
-		if (filters.status) {
-			query.status = filters.status;
+		if (filters.roomStatus) {
+			query.roomStatus = filters.roomStatus;
 		}
 
 		if (filters.hasSeaView !== undefined) {

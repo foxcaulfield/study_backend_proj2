@@ -1,11 +1,14 @@
-import { Expose } from "class-transformer";
+import { Expose, Transform } from "class-transformer";
 
 export class ResponseReservationDto {
 	@Expose()
 	public id!: string;
 
 	@Expose()
-	// @Transform(({ obj }) => obj.room?.toString())
+	@Transform(({ obj }): unknown => {
+		// eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+		return obj?.room?.toString?.();
+	})
 	public room!: string;
 
 	@Expose()

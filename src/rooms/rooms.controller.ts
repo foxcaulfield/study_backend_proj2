@@ -6,26 +6,26 @@ import {
 	Patch,
 	Param,
 	Delete,
-	Query,
-	UseInterceptors,
+	// Query,
+	// UseInterceptors,
 	// ParseIntPipe,
 	HttpStatus,
 	HttpCode,
-	ClassSerializerInterceptor,
+	// ClassSerializerInterceptor,
 } from "@nestjs/common";
 // import { RoomService } from "./room.service";
 import { CreateRoomDto } from "./dto/create-room.dto";
 import { UpdateRoomDto } from "./dto/update-room.dto";
 import { RoomsService } from "./rooms.service";
-import { RoomDocument } from "./room.model";
 import { FilterRoomDto } from "./dto/filter-room.dto";
 // import { RoomFilterDto } from "./dto/room-filter.dto";
 // import { RoomResponseDto } from "./dto/room-response.dto";
 // import { SerializeInterceptor } from "../interceptors/serialize.interceptor";
 import { ResponseRoomDto } from "./dto/response-room.dto";
+import { PaginatedResponse } from "./room.types";
 
 @Controller("rooms")
-@UseInterceptors(new ClassSerializerInterceptor(ResponseRoomDto))
+// @UseInterceptors(new ClassSerializerInterceptor(ResponseRoomDto))
 export class RoomsController {
 	public constructor(private readonly roomService: RoomsService) {}
 
@@ -34,19 +34,13 @@ export class RoomsController {
 		return await this.roomService.create(createRoomDto);
 	}
 
-	@Get()
-	public async findAll(@Query() filterDto: FilterRoomDto): Promise<{
-		rooms: RoomDocument[];
-		total: number;
-		page: number;
-		limit: number;
-		pages: number;
-	}> {
+	@Post("get_all")
+	public async findAll(@Body() filterDto: FilterRoomDto): Promise<PaginatedResponse> {
 		return await this.roomService.findAll(filterDto);
 	}
 
 	@Get("available")
-	public async findAvailable(): Promise<RoomDocument[]> {
+	public async findAvailable(): Promise<PaginatedResponse> {
 		return await this.roomService.findAvailableRooms();
 	}
 
@@ -58,12 +52,12 @@ export class RoomsController {
 	//   }
 
 	@Get(":id")
-	public async findOne(@Param("id") id: string): Promise<RoomDocument> {
+	public async findOne(@Param("id") id: string): Promise<ResponseRoomDto> {
 		return await this.roomService.findById(id);
 	}
 
 	@Patch(":id")
-	public async update(@Param("id") id: string, @Body() updateRoomDto: UpdateRoomDto): Promise<RoomDocument> {
+	public async update(@Param("id") id: string, @Body() updateRoomDto: UpdateRoomDto): Promise<ResponseRoomDto> {
 		return await this.roomService.update(id, updateRoomDto);
 	}
 
