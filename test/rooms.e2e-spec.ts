@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-// test/rooms.e2e-spec.ts
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
@@ -53,6 +52,13 @@ describe("Rooms (e2e)", () => {
 			.expect(409);
 	});
 
+	it("/rooms (POST) - invalid DTO", async () => {
+		await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: "not-number", roomType: "INVALID", hasSeaView: "not-bool" })
+			.expect(400);
+	});
+
 	it("/rooms/get_all (POST) - find all rooms", async () => {
 		const response = await request(app.getHttpServer())
 			.post("/rooms/get_all")
@@ -84,6 +90,17 @@ describe("Rooms (e2e)", () => {
 			.send({ roomNumber: 103, roomType: "STANDARD_ROOM", hasSeaView: true });
 		const id = createRes.body.id;
 		await request(app.getHttpServer()).patch(`/rooms/${id}`).send({ hasSeaView: false }).expect(200);
+	});
+
+	it("/rooms/:id (PATCH) - invalid DTO", async () => {
+		const createRes = await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: 105, roomType: "STANDARD_ROOM", hasSeaView: true });
+		const id = createRes.body.id;
+		await request(app.getHttpServer())
+			.patch(`/rooms/${id}`)
+			.send({ roomNumber: "not-number", roomType: "INVALID" })
+			.expect(400);
 	});
 
 	it("/rooms/:id (PATCH) - not found", async () => {

@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-// test/reservations.e2e-spec.ts
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
@@ -89,6 +88,17 @@ describe("Reservations (e2e)", () => {
 			.expect(404);
 	});
 
+	it("/reservations (POST) - invalid DTO", async () => {
+		await request(app.getHttpServer())
+			.post("/reservations")
+			.send({
+				room: "not-mongoid",
+				checkInDate: "not-date",
+				checkOutDate: "not-date",
+			})
+			.expect(400);
+	});
+
 	it("/reservations (GET) - find all reservations", async () => {
 		const response = await request(app.getHttpServer()).get("/reservations").expect(200);
 		expect(response.body.length).toBeGreaterThan(0);
@@ -142,6 +152,19 @@ describe("Reservations (e2e)", () => {
 			.patch(`/reservations/${id1}`)
 			.send({ checkOutDate: "2025-04-07" })
 			.expect(409);
+	});
+
+	it("/reservations/:id (PATCH) - invalid DTO", async () => {
+		const createRes = await request(app.getHttpServer()).post("/reservations").send({
+			room: roomId,
+			checkInDate: "2025-06-01",
+			checkOutDate: "2025-06-05",
+		});
+		const id = createRes.body.id;
+		await request(app.getHttpServer())
+			.patch(`/reservations/${id}`)
+			.send({ room: "not-mongoid", checkInDate: "not-date" })
+			.expect(400);
 	});
 
 	it("/reservations/:id (PATCH) - not found", async () => {
