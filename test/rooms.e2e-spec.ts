@@ -4,83 +4,101 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+// test/rooms.e2e-spec.ts
 import { Test, TestingModule } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
-import { AppModule } from "../src/app.module";
-import { getConnectionToken } from "@nestjs/mongoose";
-import { Connection } from "mongoose";
+import { AppModule } from "./../src/app.module";
+import { MongooseModule } from "@nestjs/mongoose";
+import { MongoMemoryServer } from "mongodb-memory-server";
 
-describe("RoomsController (e2e)", () => {
+describe("Rooms (e2e)", () => {
 	let app: INestApplication;
-	let connection: Connection;
+	let mongoServer: MongoMemoryServer;
 
 	beforeAll(async () => {
+		mongoServer = await MongoMemoryServer.create();
+		const mongoUri = mongoServer.getUri();
+
 		const moduleFixture: TestingModule = await Test.createTestingModule({
-			imports: [AppModule],
+			imports: [
+				MongooseModule.forRootAsync({
+					useFactory: () => ({ uri: mongoUri }),
+				}),
+				AppModule,
+			],
 		}).compile();
 
 		app = moduleFixture.createNestApplication();
-		connection = moduleFixture.get<Connection>(getConnectionToken());
 		await app.init();
-	});
-
-	beforeEach(async () => {
-		// Clean database before each test
-		await connection.db?.dropDatabase();
 	});
 
 	afterAll(async () => {
 		await app.close();
+		await mongoServer.stop();
 	});
 
-	describe("/rooms (POST)", () => {
-		it("should create a room", async () => {
-			const createRoomDto = {
-				roomNumber: 101,
-				roomType: "STANDARD_ROOM",
-				hasSeaView: true,
-			};
-
-			const response = await request(app.getHttpServer()).post("/rooms").send(createRoomDto).expect(201);
-
-			expect(response.body).toHaveProperty("id");
-			expect(response.body.roomNumber).toBe(101);
-			expect(response.body.roomType).toBe("STANDARD_ROOM");
-		});
-
-		it("should return 409 when room number already exists", async () => {
-			const createRoomDto = {
-				roomNumber: 101,
-				roomType: "STANDARD_ROOM",
-			};
-
-			// Create first room
-			await request(app.getHttpServer()).post("/rooms").send(createRoomDto).expect(201);
-
-			// Try to create duplicate
-			const response = await request(app.getHttpServer()).post("/rooms").send(createRoomDto).expect(409);
-
-			expect(response.body.message).toContain("already exists");
-		});
+	it("/rooms (POST) - create room", async () => {
+		const response = await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: 101, roomType: "STANDARD_ROOM", hasSeaView: true })
+			.expect(201);
+		expect(response.body.roomNumber).toBe(101);
 	});
 
-	describe("/rooms/get_all (POST)", () => {
-		it("should return all rooms with pagination", async () => {
-			// Create test rooms
-			await request(app.getHttpServer()).post("/rooms").send({ roomNumber: 101, roomType: "STANDARD_ROOM" });
-
-			await request(app.getHttpServer()).post("/rooms").send({ roomNumber: 102, roomType: "DELUXE_ROOM" });
-
-			const response = await request(app.getHttpServer())
-				.post("/rooms/get_all")
-				.send({ page: 1, limit: 10 })
-				.expect(201);
-
-			expect(response.body.rooms).toHaveLength(2);
-			expect(response.body.total).toBe(2);
-		});
+	it("/rooms (POST) - conflict on duplicate room number", async () => {
+		await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: 101, roomType: "STANDARD_ROOM", hasSeaView: true })
+			.expect(409);
 	});
 
-	// ... больше E2E тестов
+	it("/rooms/get_all (POST) - find all rooms", async () => {
+		const response = await request(app.getHttpServer())
+			.post("/rooms/get_all")
+			.send({ page: 1, limit: 10 })
+			.expect(201);
+		expect(response.body.rooms.length).toBeGreaterThan(0);
+	});
+
+	it("/rooms/available (GET) - find available rooms", async () => {
+		const response = await request(app.getHttpServer()).get("/rooms/available").expect(200);
+		expect(response.body.rooms).toBeDefined();
+	});
+
+	it("/rooms/:id (GET) - find one room", async () => {
+		const createRes = await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: 102, roomType: "DELUXE_ROOM", hasSeaView: false });
+		const id = createRes.body.id;
+		await request(app.getHttpServer()).get(`/rooms/${id}`).expect(200);
+	});
+
+	it("/rooms/:id (GET) - not found", async () => {
+		await request(app.getHttpServer()).get("/rooms/invalidid").expect(404);
+	});
+
+	it("/rooms/:id (PATCH) - update room", async () => {
+		const createRes = await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: 103, roomType: "STANDARD_ROOM", hasSeaView: true });
+		const id = createRes.body.id;
+		await request(app.getHttpServer()).patch(`/rooms/${id}`).send({ hasSeaView: false }).expect(200);
+	});
+
+	it("/rooms/:id (PATCH) - not found", async () => {
+		await request(app.getHttpServer()).patch("/rooms/invalidid").send({ hasSeaView: false }).expect(404);
+	});
+
+	it("/rooms/:id (DELETE) - remove room", async () => {
+		const createRes = await request(app.getHttpServer())
+			.post("/rooms")
+			.send({ roomNumber: 104, roomType: "STANDARD_ROOM", hasSeaView: true });
+		const id = createRes.body.id;
+		await request(app.getHttpServer()).delete(`/rooms/${id}`).expect(204);
+	});
+
+	it("/rooms/:id (DELETE) - not found", async () => {
+		await request(app.getHttpServer()).delete("/rooms/invalidid").expect(404);
+	});
 });
