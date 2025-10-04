@@ -26,14 +26,14 @@ export class ReservationsController {
 		return await this.reservationsService.findByRoom(roomId);
 	}
 
-	@Get("availability/:roomId")
-	public async checkAvailability(
-		@Param("roomId") roomId: string,
-		@Body("startDate") startDate?: Date,
-		@Body("endDate") endDate?: Date,
-	): Promise<{ available: boolean; conflictingDates?: Date[] }> {
-		return await this.reservationsService.getRoomAvailability(roomId, startDate, endDate);
-	}
+	// @Get("availability/:roomId")
+	// public async checkAvailability(
+	// 	@Param("roomId") roomId: string,
+	// 	@Body("startDate") startDate?: Date,
+	// 	@Body("endDate") endDate?: Date,
+	// ): Promise<{ available: boolean; conflictingDates?: Date[] }> {
+	// 	return await this.reservationsService.getRoomAvailability(roomId, startDate, endDate);
+	// }
 
 	@Get(":id")
 	public async findOne(@Param("id") id: string): Promise<ResponseReservationDto | null> {

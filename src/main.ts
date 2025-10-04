@@ -4,11 +4,13 @@ import { DocumentBuilder, OpenAPIObject, SwaggerModule } from "@nestjs/swagger";
 import { join } from "node:path";
 import { writeFileSync } from "node:fs";
 import { ValidationPipe } from "@nestjs/common";
+import { AllExceptionsFilter } from "./filters/all-exception.filter";
 
 async function bootstrap(): Promise<void> {
 	const app = await NestFactory.create(AppModule, {
 		// bodyParser: false,
 	});
+	app.useGlobalFilters(new AllExceptionsFilter());
 
 	app.useGlobalPipes(
 		new ValidationPipe({

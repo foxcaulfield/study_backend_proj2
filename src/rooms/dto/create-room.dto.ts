@@ -1,11 +1,10 @@
 import { IsEnum, IsInt, IsBoolean, Min, Max, IsOptional } from "class-validator";
-import { RoomStatusEnum, RoomTypeEnum } from "../room.model";
+import { RoomTypeEnum } from "../room.model";
 
 // export class AmenityDto {
 //   @IsBoolean()
 //   @IsOptional()
 //   public isPremium?: boolean;
-
 //   @IsOptional()
 //   public description?: string;
 // }
@@ -19,9 +18,9 @@ export class CreateRoomDto {
 	@IsEnum(RoomTypeEnum)
 	public roomType!: RoomTypeEnum;
 
-	@IsEnum(RoomStatusEnum)
-	@IsOptional()
-	public status?: RoomStatusEnum;
+	// @IsEnum(RoomStatusEnum)
+	// @IsOptional()
+	// public roomStatus?: RoomStatusEnum = RoomStatusEnum.MAINTENANCE;
 
 	@IsBoolean()
 	@IsOptional()
