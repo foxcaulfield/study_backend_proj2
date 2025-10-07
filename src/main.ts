@@ -22,6 +22,9 @@ async function bootstrap(): Promise<void> {
 		}),
 	);
 
+	// const reflector = app.get(Reflector);
+	// app.useGlobalGuards(new RolesGuard(reflector));
+
 	const config = new DocumentBuilder()
 		.setTitle("Application Title")
 		.setDescription("The Application API Description")

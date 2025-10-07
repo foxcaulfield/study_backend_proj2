@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+	Injectable,
+	ConflictException,
+	NotFoundException,
+	BadRequestException,
+	ForbiddenException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Reservation, ReservationDocument } from "./reservation.model";
@@ -7,6 +13,8 @@ import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { ResponseReservationDto } from "./dto/response-reservation.dto";
 import { plainToInstance } from "class-transformer";
 import { RoomsService } from "src/rooms/rooms.service";
+import { ResponseUserDto } from "src/users/dto/response-user.dto";
+import { UserRoleEnum } from "src/users/user.model";
 // import { Room, type RoomModelType } from "src/rooms/room.model";
 
 @Injectable()
@@ -178,11 +186,21 @@ export class ReservationsService {
 		return this.toResponseDto(updatedReservation);
 	}
 
-	public async remove(id: string): Promise<ResponseReservationDto | null> {
-		const result = await this.reservationModel.findByIdAndDelete(id).exec();
+	public async remove(id: string, user: ResponseUserDto): Promise<ResponseReservationDto | null> {
+		const result = await this.reservationModel.findById(id).exec();
 		if (!result) {
 			throw new NotFoundException(`Reservation with ID ${id} not found`);
 		}
+		const isAuthor = result.userId.toString() === user.id;
+		const isAdmin = user.role === UserRoleEnum.ADMIN;
+
+		// Only the author of the reservation or an admin can delete it
+		if (!isAuthor || !isAdmin) {
+			throw new ForbiddenException("You do not have permission to delete this reservation");
+		}
+
+		await result.deleteOne().exec();
+
 		const responseDto = plainToInstance(ResponseReservationDto, result, {
 			excludeExtraneousValues: true,
 		});

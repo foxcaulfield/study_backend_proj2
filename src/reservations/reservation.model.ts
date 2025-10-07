@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Model, Types } from "mongoose";
 import { Room } from "src/rooms/room.model";
+import { User } from "src/users/user.model";
 
 @Schema({ strict: true, timestamps: true })
 export class Reservation {
@@ -39,6 +40,9 @@ export class Reservation {
 		},
 	})
 	public checkOutDate!: Date;
+
+	@Prop({ type: Types.ObjectId, ref: User.name, required: true })
+	public userId!: Types.ObjectId;
 }
 
 export type ReservationDocument = HydratedDocument<Reservation>;

@@ -5,6 +5,7 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { Reservation, ReservationSchema } from "./reservation.model";
 // import { Room, RoomSchema } from "src/rooms/room.model";
 import { RoomsModule } from "src/rooms/rooms.module";
+import { UsersModule } from "src/users/users.module";
 
 @Module({
 	imports: [
@@ -19,6 +20,7 @@ import { RoomsModule } from "src/rooms/rooms.module";
 			// },
 		]),
 		RoomsModule,
+		UsersModule,
 	],
 	providers: [ReservationsService],
 	controllers: [ReservationsController],

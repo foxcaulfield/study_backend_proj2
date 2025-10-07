@@ -6,6 +6,8 @@ import { ResponseUserDto } from "./dto/response-user.dto";
 import { UserRoleEnum } from "./user.model";
 import { CurrentUser } from "src/decorators/current-user.decorator";
 import { CurrentUserPipe } from "src/pipes/current-user.pipe";
+import { Roles } from "src/decorators/roles.decorator";
+import { RolesGuard } from "src/guards/roles.guard";
 
 export interface User {
 	_id?: { toString(): string };
@@ -33,8 +35,9 @@ export class UsersController {
 		};
 	}
 
+	@UseGuards(JwtAuthGuard, RolesGuard)
+	@Roles(UserRoleEnum.ADMIN)
 	@Get(":id")
-	@UseGuards(JwtAuthGuard)
 	public async findOne(@Param("id") id: string): Promise<ResponseUserDto> {
 		const user = await this.usersService.findById(id);
 		if (!user) {
