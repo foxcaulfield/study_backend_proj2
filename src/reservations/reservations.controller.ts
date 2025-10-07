@@ -20,8 +20,11 @@ export class ReservationsController {
 
 	@Post()
 	@UsePipes(new ValidationPipe({ transform: true }))
-	public async create(@Body() createReservationDto: CreateReservationDto): Promise<ResponseReservationDto | null> {
-		return await this.reservationsService.create(createReservationDto);
+	public async create(
+		@Body() createReservationDto: CreateReservationDto,
+		@CurrentUser(undefined, CurrentUserPipe) currentUser: ResponseUserDto,
+	): Promise<ResponseReservationDto | null> {
+		return await this.reservationsService.create(createReservationDto, currentUser);
 	}
 
 	@Roles(UserRoleEnum.ADMIN)

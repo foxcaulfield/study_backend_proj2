@@ -87,17 +87,21 @@ export class ReservationsService {
 		}
 	}
 
-	public async create(createReservationDto: CreateReservationDto): Promise<ResponseReservationDto> {
+	public async create(
+		createReservationDto: CreateReservationDto,
+		user: ResponseUserDto,
+	): Promise<ResponseReservationDto> {
 		const { room: roomId, checkInDate, checkOutDate, ...restOfDto } = createReservationDto;
 
 		await this.ensureRoomExists(roomId);
 		this.checkDatesAreValid(checkInDate, checkOutDate);
 		await this.ensureRoomAvailable(roomId, checkInDate, checkOutDate);
-
+		new Types.ObjectId(user.id); // just to be sure that user.id is a valid ObjectId
 		const reservation = new this.reservationModel({
 			room: new Types.ObjectId(roomId) /* important */,
 			checkInDate,
 			checkOutDate,
+			userId: new Types.ObjectId(user.id),
 			...restOfDto,
 		});
 
@@ -195,7 +199,7 @@ export class ReservationsService {
 		const isAdmin = user.role === UserRoleEnum.ADMIN;
 
 		// Only the author of the reservation or an admin can delete it
-		if (!isAuthor || !isAdmin) {
+		if (!isAuthor && !isAdmin) {
 			throw new ForbiddenException("You do not have permission to delete this reservation");
 		}
 
