@@ -245,6 +245,10 @@ export class ReservationsService {
 		year: number,
 		month: number,
 	): Promise<{ roomNumber: number; reservationDaysCount: number }[]> {
+		if (year < 1900 || year > 2100) {
+			throw new BadRequestException("Year must be between 1900 and 2100");
+		}
+
 		if (month < 1 || month > 12) {
 			throw new BadRequestException("Month must be between 1 and 12");
 		}
@@ -252,89 +256,75 @@ export class ReservationsService {
 		const firstDayOfMonth = new Date(year, month - 1, 1);
 		const lastDayOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // Last millisecond of the month
 
-		const stats = await this.reservationModel.aggregate([
-			// Stage 1: Filter reservations that overlap the requested month.
-			{
-				$match: {
-					$expr: {
-						$and: [
-							{ $lte: ["$checkInDate", lastDayOfMonth] },
-							{ $gte: ["$checkOutDate", firstDayOfMonth] },
-						],
-					},
-				},
-			},
-
-			// Stage 2: Keep the room ObjectId and compute effective dates.
-			{
-				$project: {
-					roomId: "$room", // Keep as ObjectId for lookup
-					effectiveStart: { $max: ["$checkInDate", firstDayOfMonth] },
-					effectiveEnd: { $min: ["$checkOutDate", lastDayOfMonth] },
-				},
-			},
-
-			// Stage 3: Lookup the room document to get roomNumber.
-			{
-				$lookup: {
-					from: "rooms", // Collection name for rooms
-					localField: "roomId",
-					foreignField: "_id",
-					as: "roomDoc",
-				},
-			},
-			// Unwind the lookup result (preserve docs if room is missing).
-			{ $unwind: { path: "$roomDoc", preserveNullAndEmptyArrays: true } },
-
-			// Stage 4: Extract roomNumber from the joined document.
-			{
-				$project: {
-					roomNumber: "$roomDoc.roomNumber", // Will be null if roomDoc is null
-					effectiveStart: 1,
-					effectiveEnd: 1,
-				},
-			},
-
-			// Stage 5: Compute reservedDays.
-			{
-				$project: {
-					roomNumber: 1,
-					reservedDays: {
-						$max: [
-							0,
+		const stats = await this.reservationModel.db
+			.collection("rooms")
+			.aggregate([
+				// Stage 1: Lookup reservations that overlap the month for each room
+				{
+					$lookup: {
+						from: "reservations",
+						let: { roomId: "$_id" },
+						pipeline: [
 							{
-								$round: [
-									{
-										$divide: [
-											{ $subtract: ["$effectiveEnd", "$effectiveStart"] },
-											1000 * 60 * 60 * 24,
+								$match: {
+									$expr: {
+										$and: [
+											{ $eq: ["$room", "$$roomId"] },
+											{ $lte: ["$checkInDate", lastDayOfMonth] },
+											{ $gte: ["$checkOutDate", firstDayOfMonth] },
 										],
 									},
-									0,
-								],
+								},
+							},
+							// Compute effective dates for each reservation
+							{
+								$project: {
+									effectiveStart: { $max: ["$checkInDate", firstDayOfMonth] },
+									effectiveEnd: { $min: ["$checkOutDate", lastDayOfMonth] },
+								},
+							},
+							// Compute reservedDays for each reservation
+							{
+								$project: {
+									reservedDays: {
+										$max: [
+											0,
+											{
+												$round: [
+													{
+														$divide: [
+															{ $subtract: ["$effectiveEnd", "$effectiveStart"] },
+															1000 * 60 * 60 * 24,
+														],
+													},
+													0,
+												],
+											},
+										],
+									},
+								},
 							},
 						],
+						as: "reservations",
 					},
 				},
-			},
-
-			// Stage 6: Group by roomNumber and sum reservedDays.
-			{
-				$group: {
-					_id: "$roomNumber",
-					reservationDaysCount: { $sum: "$reservedDays" },
+				// Stage 2: Group by roomNumber and sum reservedDays from all reservations
+				{
+					$project: {
+						roomNumber: 1,
+						reservationDaysCount: { $sum: "$reservations.reservedDays" },
+					},
 				},
-			},
-
-			// Stage 7: Shape the output.
-			{
-				$project: {
-					roomNumber: "$_id",
-					reservationDaysCount: 1,
-					_id: 0,
+				// Stage 3: Shape the output
+				{
+					$project: {
+						roomNumber: 1,
+						reservationDaysCount: 1,
+						_id: 0,
+					},
 				},
-			},
-		]);
+			])
+			.toArray();
 
 		return stats as { roomNumber: number; reservationDaysCount: number }[];
 	}
