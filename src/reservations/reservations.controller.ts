@@ -1,12 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, UseGuards } from "@nestjs/common";
+import {
+	Controller,
+	Get,
+	Post,
+	Body,
+	Patch,
+	Param,
+	Delete,
+	UsePipes,
+	ValidationPipe,
+	UseGuards,
+	ParseIntPipe,
+} from "@nestjs/common";
 import { ReservationsService } from "./reservations.service";
 import { CreateReservationDto } from "./dto/create-reservation.dto";
 import { UpdateReservationDto } from "./dto/update-reservation.dto";
-import { Serialize } from "./interceptors/serialize.interceptor";
+// import { Serialize } from "./interceptors/serialize.interceptor";
 import { ResponseReservationDto } from "./dto/response-reservation.dto";
 import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
 import { RolesGuard } from "src/guards/roles.guard";
-import { Roles } from "src/decorators/roles.decorator";
+import { Public, Roles } from "src/decorators/roles.decorator";
 import { UserRoleEnum } from "src/users/user.model";
 import { CurrentUser } from "src/decorators/current-user.decorator";
 import { CurrentUserPipe } from "src/pipes/current-user.pipe";
@@ -14,7 +26,7 @@ import { ResponseUserDto } from "src/users/dto/response-user.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("reservations")
-@Serialize(ResponseReservationDto)
+// @Serialize(ResponseReservationDto)
 export class ReservationsController {
 	public constructor(private readonly reservationsService: ReservationsService) {}
 
@@ -70,5 +82,15 @@ export class ReservationsController {
 		@CurrentUser(undefined, CurrentUserPipe) currentUser: ResponseUserDto,
 	): Promise<ResponseReservationDto | null> {
 		return await this.reservationsService.remove(id, currentUser);
+	}
+
+	@Roles(UserRoleEnum.ADMIN)
+	@Get("stats/:year/:month")
+	public async getStats(
+		@Param("year", ParseIntPipe) year: number,
+		@Param("month", ParseIntPipe) month: number,
+	): Promise<{ roomNumber: number; reservationDaysCount: number }[]> {
+		const fckResult = await this.reservationsService.getReservationStats(year, month);
+		return fckResult;
 	}
 }

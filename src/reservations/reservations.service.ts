@@ -240,4 +240,70 @@ export class ReservationsService {
 	// 		conflictingDates: conflicts.map((res): Date => res.checkInDate),
 	// 	};
 	// }
+
+	public async getReservationStats(
+		year: number,
+		month: number,
+	): Promise<{ roomNumber: number; reservationDaysCount: number }[]> {
+		if (month < 1 || month > 12) {
+			throw new BadRequestException("Month must be between 1 and 12");
+		}
+
+		const startDate = new Date(year, month - 1, 1);
+		const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last millisecond of the month
+
+		const stats = await this.reservationModel.aggregate([
+			{
+				$match: {
+					$expr: {
+						$and: [{ $lt: ["$checkInDate", endDate] }, { $gt: ["$checkOutDate", startDate] }],
+					},
+				},
+			},
+			{
+				$project: {
+					room: { $toString: "$room" },
+					effectiveStart: { $max: ["$checkInDate", startDate] },
+					effectiveEnd: { $min: ["$checkOutDate", endDate] },
+				},
+			},
+			{
+				$project: {
+					room: 1,
+					// round to nearest whole day; use $ceil, $floor or $trunc instead if you want different semantics
+					reservedDays: {
+						$max: [
+							0,
+							{
+								$round: [
+									{
+										$divide: [
+											{ $subtract: ["$effectiveEnd", "$effectiveStart"] },
+											1000 * 60 * 60 * 24,
+										],
+									},
+									0,
+								],
+							},
+						],
+					},
+				},
+			},
+			{
+				$group: {
+					_id: "$room",
+					reservationDaysCount: { $sum: "$reservedDays" },
+				},
+			},
+			{
+				$project: {
+					roomNumber: "$_id",
+					reservationDaysCount: 1,
+					_id: 0,
+				},
+			},
+		]);
+
+		return stats as { roomNumber: number; reservationDaysCount: number }[];
+	}
 }
