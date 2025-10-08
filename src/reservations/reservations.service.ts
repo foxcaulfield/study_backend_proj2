@@ -249,22 +249,25 @@ export class ReservationsService {
 			throw new BadRequestException("Month must be between 1 and 12");
 		}
 
-		const startDate = new Date(year, month - 1, 1);
-		const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last millisecond of the month
+		const firstDayOfMonth = new Date(year, month - 1, 1);
+		const lastDayOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // Last millisecond of the month
 
 		const stats = await this.reservationModel.aggregate([
 			{
 				$match: {
 					$expr: {
-						$and: [{ $lt: ["$checkInDate", endDate] }, { $gt: ["$checkOutDate", startDate] }],
+						$and: [
+							{ $lte: ["$checkInDate", lastDayOfMonth] },
+							{ $gte: ["$checkOutDate", firstDayOfMonth] },
+						],
 					},
 				},
 			},
 			{
 				$project: {
 					room: { $toString: "$room" },
-					effectiveStart: { $max: ["$checkInDate", startDate] },
-					effectiveEnd: { $min: ["$checkOutDate", endDate] },
+					effectiveStart: { $max: ["$checkInDate", firstDayOfMonth] },
+					effectiveEnd: { $min: ["$checkOutDate", lastDayOfMonth] },
 				},
 			},
 			{

@@ -86,11 +86,11 @@ export class ReservationsController {
 
 	@Roles(UserRoleEnum.ADMIN)
 	@Get("stats/:year/:month")
-	public async getStats(
+	public async getReservationStatsForMonth(
 		@Param("year", ParseIntPipe) year: number,
 		@Param("month", ParseIntPipe) month: number,
 	): Promise<{ roomNumber: number; reservationDaysCount: number }[]> {
-		const fckResult = await this.reservationsService.getReservationStats(year, month);
-		return fckResult;
+		const result = await this.reservationsService.getReservationStats(year, month);
+		return result;
 	}
 }
