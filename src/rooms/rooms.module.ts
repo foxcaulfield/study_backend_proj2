@@ -11,6 +11,7 @@ import { UsersModule } from "src/users/users.module";
 			{
 				name: Room.name,
 				schema: RoomSchema,
+				// collection: "rooms",
 			},
 		]),
 		UsersModule,
