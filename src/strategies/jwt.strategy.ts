@@ -7,10 +7,9 @@ import { JwtPayload } from "src/interfaces/jwt-payload.interface";
 @Injectable()
 export class JwtStrategy extends PassportStrategy(PassportJwtStrategyEntity, "jwt") {
 	public constructor(private readonly configService: ConfigService) {
-		const secret = configService?.get<string>("JWT_SECRET");
-		if (!secret) {
-			throw new Error("JWT_SECRET is not defined in environment variables");
-		}
+		const secret = configService.get<string>("JWT_SECRET");
+		if (!secret) throw new Error("JWT_SECRET is not defined in environment variables");
+
 		super({
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 			ignoreExpiration: false,
@@ -19,14 +18,11 @@ export class JwtStrategy extends PassportStrategy(PassportJwtStrategyEntity, "jw
 	}
 
 	public validate(payload: JwtPayload): JwtPayload {
-		if (!payload.userId || !payload.email) {
-			throw new Error("Invalid JWT payload");
-		}
-
+		if (!payload.userId || !payload.email) throw new Error("Invalid JWT payload");
 		return { userId: payload.userId, email: payload.email };
 	}
 
-	// public diagnostic(): void {
-	// 	console.log("JWT Strategy initialized with secret:", this.configService.get<string>("JWT_SECRET"));
-	// }
+	public diagnostic(): void {
+		this.configService.get<string>("JWT_SECRET"); /* does nothing, just to use configService in constructor */
+	}
 }
