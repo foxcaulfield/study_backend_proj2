@@ -253,6 +253,7 @@ export class ReservationsService {
 		const lastDayOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // Last millisecond of the month
 
 		const stats = await this.reservationModel.aggregate([
+			// Stage 1: Filter reservations that overlap the requested month.
 			{
 				$match: {
 					$expr: {
@@ -263,17 +264,41 @@ export class ReservationsService {
 					},
 				},
 			},
+
+			// Stage 2: Keep the room ObjectId and compute effective dates.
 			{
 				$project: {
-					room: { $toString: "$room" },
+					roomId: "$room", // Keep as ObjectId for lookup
 					effectiveStart: { $max: ["$checkInDate", firstDayOfMonth] },
 					effectiveEnd: { $min: ["$checkOutDate", lastDayOfMonth] },
 				},
 			},
+
+			// Stage 3: Lookup the room document to get roomNumber.
+			{
+				$lookup: {
+					from: "rooms", // Collection name for rooms
+					localField: "roomId",
+					foreignField: "_id",
+					as: "roomDoc",
+				},
+			},
+			// Unwind the lookup result (preserve docs if room is missing).
+			{ $unwind: { path: "$roomDoc", preserveNullAndEmptyArrays: true } },
+
+			// Stage 4: Extract roomNumber from the joined document.
 			{
 				$project: {
-					room: 1,
-					// round to nearest whole day; use $ceil, $floor or $trunc instead if you want different semantics
+					roomNumber: "$roomDoc.roomNumber", // Will be null if roomDoc is null
+					effectiveStart: 1,
+					effectiveEnd: 1,
+				},
+			},
+
+			// Stage 5: Compute reservedDays.
+			{
+				$project: {
+					roomNumber: 1,
 					reservedDays: {
 						$max: [
 							0,
@@ -292,12 +317,16 @@ export class ReservationsService {
 					},
 				},
 			},
+
+			// Stage 6: Group by roomNumber and sum reservedDays.
 			{
 				$group: {
-					_id: "$room",
+					_id: "$roomNumber",
 					reservationDaysCount: { $sum: "$reservedDays" },
 				},
 			},
+
+			// Stage 7: Shape the output.
 			{
 				$project: {
 					roomNumber: "$_id",
