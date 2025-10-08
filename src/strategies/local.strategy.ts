@@ -14,7 +14,6 @@ export class LocalStrategy extends PassportStrategy(PassportLocalStrategyEntity,
 	}
 
 	public async validate(email: string, password: string): Promise<JwtPayload> {
-		console.log("LocalStrategy, validate method, email:", email);
 		const user = await this.authService.validateUser(email, password);
 
 		if (!user) {

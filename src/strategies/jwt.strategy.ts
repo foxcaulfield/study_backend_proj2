@@ -19,7 +19,6 @@ export class JwtStrategy extends PassportStrategy(PassportJwtStrategyEntity, "jw
 	}
 
 	public validate(payload: JwtPayload): JwtPayload {
-		console.log("JwtStrategy, payload:", payload);
 		if (!payload.userId || !payload.email) {
 			throw new Error("Invalid JWT payload");
 		}
@@ -27,7 +26,7 @@ export class JwtStrategy extends PassportStrategy(PassportJwtStrategyEntity, "jw
 		return { userId: payload.userId, email: payload.email };
 	}
 
-	public diagnostic(): void {
-		console.log("JWT Strategy initialized with secret:", this.configService.get<string>("JWT_SECRET"));
-	}
+	// public diagnostic(): void {
+	// 	console.log("JWT Strategy initialized with secret:", this.configService.get<string>("JWT_SECRET"));
+	// }
 }

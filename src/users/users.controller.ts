@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-import { Controller, Get, NotFoundException, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Param, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
 import { UsersService } from "./users.service";
 import { ResponseUserDto } from "./dto/response-user.dto";
@@ -25,7 +24,6 @@ export class UsersController {
 	@UseGuards(JwtAuthGuard)
 	@Get("profile")
 	public getProfile(@CurrentUser(undefined, CurrentUserPipe) user: ResponseUserDto): ResponseUserDto {
-		console.log("controller 'users', method 'getProfile', user:", user);
 		return {
 			id: user.id,
 			email: user.email,
@@ -40,9 +38,7 @@ export class UsersController {
 	@Get(":id")
 	public async findOne(@Param("id") id: string): Promise<ResponseUserDto> {
 		const user = await this.usersService.findById(id);
-		if (!user) {
-			throw new NotFoundException("User not found");
-		}
+
 		return {
 			id: user.id,
 			email: user.email,

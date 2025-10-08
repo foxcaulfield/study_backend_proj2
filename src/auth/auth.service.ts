@@ -14,7 +14,6 @@ export class AuthService {
 	) {}
 
 	public async validateUser(email: string, password: string): Promise<JwtPayload | null> {
-		console.log("AuthService, method validateUser, email:", email);
 		const user = await this.usersService.findByEmail(email);
 		const isValid = await this.usersService.validatePassword(user.passwordHash, password);
 		if (isValid) {
@@ -33,7 +32,6 @@ export class AuthService {
 	}
 
 	public async logUserIn(dto: LoginDto): Promise<{ access_token: string }> {
-		console.log("AuthService, method logUserIn, dto:", dto);
 		const userData = await this.validateUser(dto.email, dto.password);
 
 		if (!userData) {
@@ -52,7 +50,7 @@ export class AuthService {
 		const user = await this.usersService.createUser(dto);
 		// const { passwordHash, ...result } = user;
 
-		const payload = { email: user.email, /* sub: user._id, */ role: user.role };
+		const payload = { email: user.email, role: user.role };
 
 		return {
 			access_token: this.jwtService.sign(payload),

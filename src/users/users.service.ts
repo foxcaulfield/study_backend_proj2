@@ -65,7 +65,6 @@ export class UsersService {
 	}
 
 	public async findById(id: string): Promise<ResponseUserDto> {
-		console.log("UsersService, method findById, id:", id);
 		const foundUser = await this.userModel.findById(id);
 
 		if (!foundUser) {
