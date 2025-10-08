@@ -18,7 +18,7 @@ import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { ResponseReservationDto } from "./dto/response-reservation.dto";
 import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
 import { RolesGuard } from "src/guards/roles.guard";
-import { Public, Roles } from "src/decorators/roles.decorator";
+import { Roles } from "src/decorators/roles.decorator";
 import { UserRoleEnum } from "src/users/user.model";
 import { CurrentUser } from "src/decorators/current-user.decorator";
 import { CurrentUserPipe } from "src/pipes/current-user.pipe";
