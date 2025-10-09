@@ -10,6 +10,7 @@ import { AuthModule } from "./auth/auth.module";
 import { FilesModule } from "./files/files.module";
 import { ServeStaticModule } from "@nestjs/serve-static";
 import { join } from "path";
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
 	imports: [
@@ -43,6 +44,7 @@ import { join } from "path";
 		UsersModule,
 		AuthModule,
 		FilesModule,
+		TelegramModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

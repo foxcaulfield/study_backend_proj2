@@ -6,6 +6,7 @@ import { Reservation, ReservationSchema } from "./reservation.model";
 // import { Room, RoomSchema } from "src/rooms/room.model";
 import { RoomsModule } from "src/rooms/rooms.module";
 import { UsersModule } from "src/users/users.module";
+import { TelegramModule } from "src/telegram/telegram.module";
 
 @Module({
 	imports: [
@@ -21,6 +22,7 @@ import { UsersModule } from "src/users/users.module";
 		]),
 		RoomsModule,
 		UsersModule,
+		TelegramModule,
 	],
 	providers: [ReservationsService],
 	controllers: [ReservationsController],

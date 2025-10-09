@@ -15,6 +15,7 @@ import { plainToInstance } from "class-transformer";
 import { RoomsService } from "src/rooms/rooms.service";
 import { ResponseUserDto } from "src/users/dto/response-user.dto";
 import { UserRoleEnum } from "src/users/user.model";
+import { TelegramService } from "src/telegram/telegram.service";
 // import { Room, type RoomModelType } from "src/rooms/room.model";
 
 @Injectable()
@@ -25,6 +26,7 @@ export class ReservationsService {
 		// @InjectModel(Room.name)
 		// private readonly roomModel: RoomModelType,
 		private readonly roomService: RoomsService,
+		private readonly telegramService: TelegramService,
 	) {}
 
 	private toResponseDto(entity: ReservationDocument): ResponseReservationDto;
@@ -107,6 +109,8 @@ export class ReservationsService {
 
 		await reservation.save();
 
+		await this.telegramService.sendMessage(`New reservation created: ${JSON.stringify(reservation, null, 2)}`);
+
 		return this.toResponseDto(reservation);
 	}
 
@@ -187,6 +191,8 @@ export class ReservationsService {
 			throw new NotFoundException(`Reservation with ID ${id} not found after update`);
 		}
 
+		await this.telegramService.sendMessage(`Reservation updated: ${JSON.stringify(updatedReservation, null, 2)}`);
+
 		return this.toResponseDto(updatedReservation);
 	}
 
@@ -204,6 +210,9 @@ export class ReservationsService {
 		}
 
 		await result.deleteOne().exec();
+
+		// await this.telegramService.sendMessage(`Reservation deleted: ${JSON.stringify(result._id.toString())}`);
+		await this.telegramService.sendMessage(`Reservation deleted: ${JSON.stringify(result, null, 2)}`);
 
 		const responseDto = plainToInstance(ResponseReservationDto, result, {
 			excludeExtraneousValues: true,
