@@ -1,14 +1,36 @@
 services:
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: backend_container
+        env_file: ./.env
+        environment:
+            NODE_ENV: production
+            MONGO_HOST: mongo
+        depends_on:
+            mongo:
+                condition: service_healthy
+        ports:
+            - 3000:3000
+        restart: unless-stopped
+
     mongo:
         image: mongo:8-noble
-        restart: always
         container_name: mongo_container
+        restart: unless-stopped
         env_file: ./.env
         ports:
             - 27017:27017
         volumes:
-            - ./mongo-data:/data/db
+            - mongo-data:/data/db
         command: --wiredTigerCacheSizeGB 1.5
+        healthcheck:
+            test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        # Uncomment the following lines to enable a custom network
         # networks:
         #     - backend-network
 
@@ -26,5 +48,6 @@ services:
             ME_CONFIG_BASICAUTH_ENABLED: true
             ME_CONFIG_BASICAUTH_USERNAME: root
             ME_CONFIG_BASICAUTH_PASSWORD: example
-# networks:
-#     backend-network:
+
+volumes:
+    mongo-data:
