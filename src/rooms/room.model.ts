@@ -65,6 +65,9 @@ export class Room {
 	@Prop(Boolean)
 	public hasSeaView!: boolean;
 
+	@Prop([String])
+	public images?: Array<string>;
+
 	// @Prop(String)
 	public id?: string;
 

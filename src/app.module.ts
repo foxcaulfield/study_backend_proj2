@@ -7,9 +7,16 @@ import { RoomsModule } from "./rooms/rooms.module";
 import { ReservationsModule } from "./reservations/reservations.module";
 import { UsersModule } from "./users/users.module";
 import { AuthModule } from "./auth/auth.module";
+import { FilesModule } from "./files/files.module";
+import { ServeStaticModule } from "@nestjs/serve-static";
+import { join } from "path";
 
 @Module({
 	imports: [
+		ServeStaticModule.forRoot({
+			rootPath: join(process.cwd(), "uploads"),
+			serveRoot: "/static",
+		}),
 		ConfigModule.forRoot({
 			isGlobal: true,
 			envFilePath: "./.env",
@@ -35,6 +42,7 @@ import { AuthModule } from "./auth/auth.module";
 		ReservationsModule,
 		UsersModule,
 		AuthModule,
+		FilesModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

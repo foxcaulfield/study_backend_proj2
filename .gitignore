@@ -3,3 +3,4 @@ mongo-data
 dist
 swagger*
 .vscode
+uploads
