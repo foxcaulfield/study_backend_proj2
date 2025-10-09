@@ -1,8 +1,24 @@
 services:
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: backend_container
+        env_file: ./.env
+        environment:
+            NODE_ENV: production
+            MONGO_HOST: mongo
+        depends_on:
+            mongo:
+                condition: service_healthy
+        ports:
+            - 3000:3000
+        restart: unless-stopped
+
     mongo:
         image: mongo:8-noble
-        restart: always
         container_name: mongo_container
+        restart: unless-stopped
         env_file: ./.env
         ports:
             - 27017:27017
@@ -26,5 +42,6 @@ services:
             ME_CONFIG_BASICAUTH_ENABLED: true
             ME_CONFIG_BASICAUTH_USERNAME: root
             ME_CONFIG_BASICAUTH_PASSWORD: example
-# networks:
-#     backend-network:
+
+volumes:
+    mongo-data:
