@@ -113,3 +113,6 @@ export class Room {
 export type RoomDocument = HydratedDocument<Room>;
 export type RoomModelType = Model<RoomDocument>;
 export const RoomSchema = SchemaFactory.createForClass(Room);
+
+RoomSchema.index({ RoomStatusEnum: "text", RoomTypeEnum: "text" });
+// RoomSchema.index({ "$**": "text" });

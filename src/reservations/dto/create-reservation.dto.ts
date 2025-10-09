@@ -10,7 +10,7 @@ export class CreateReservationDto {
 	@Transform((tp): Date => {
 		// const type = tp.type;
 
-		const date = new Date(tp.value);
+		const date = new Date(tp.value as string | number | Date);
 		date.setUTCHours(0, 0, 0, 0);
 		return date;
 	})

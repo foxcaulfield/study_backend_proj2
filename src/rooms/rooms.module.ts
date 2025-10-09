@@ -3,6 +3,7 @@ import { RoomsService } from "./rooms.service";
 import { RoomsController } from "./rooms.controller";
 import { MongooseModule } from "@nestjs/mongoose";
 import { Room, RoomSchema } from "./room.model";
+import { UsersModule } from "src/users/users.module";
 
 @Module({
 	imports: [
@@ -10,8 +11,10 @@ import { Room, RoomSchema } from "./room.model";
 			{
 				name: Room.name,
 				schema: RoomSchema,
+				// collection: "rooms",
 			},
 		]),
+		UsersModule,
 	],
 	providers: [RoomsService],
 	controllers: [RoomsController],

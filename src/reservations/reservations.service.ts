@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from "@nestjs/common";
+import {
+	Injectable,
+	ConflictException,
+	NotFoundException,
+	BadRequestException,
+	ForbiddenException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Reservation, ReservationDocument } from "./reservation.model";
@@ -7,6 +13,8 @@ import { UpdateReservationDto } from "./dto/update-reservation.dto";
 import { ResponseReservationDto } from "./dto/response-reservation.dto";
 import { plainToInstance } from "class-transformer";
 import { RoomsService } from "src/rooms/rooms.service";
+import { ResponseUserDto } from "src/users/dto/response-user.dto";
+import { UserRoleEnum } from "src/users/user.model";
 // import { Room, type RoomModelType } from "src/rooms/room.model";
 
 @Injectable()
@@ -79,17 +87,21 @@ export class ReservationsService {
 		}
 	}
 
-	public async create(createReservationDto: CreateReservationDto): Promise<ResponseReservationDto> {
+	public async create(
+		createReservationDto: CreateReservationDto,
+		user: ResponseUserDto,
+	): Promise<ResponseReservationDto> {
 		const { room: roomId, checkInDate, checkOutDate, ...restOfDto } = createReservationDto;
 
 		await this.ensureRoomExists(roomId);
 		this.checkDatesAreValid(checkInDate, checkOutDate);
 		await this.ensureRoomAvailable(roomId, checkInDate, checkOutDate);
-
+		new Types.ObjectId(user.id); // just to be sure that user.id is a valid ObjectId
 		const reservation = new this.reservationModel({
 			room: new Types.ObjectId(roomId) /* important */,
 			checkInDate,
 			checkOutDate,
+			userId: new Types.ObjectId(user.id),
 			...restOfDto,
 		});
 
@@ -178,11 +190,21 @@ export class ReservationsService {
 		return this.toResponseDto(updatedReservation);
 	}
 
-	public async remove(id: string): Promise<ResponseReservationDto | null> {
-		const result = await this.reservationModel.findByIdAndDelete(id).exec();
+	public async remove(id: string, user: ResponseUserDto): Promise<ResponseReservationDto | null> {
+		const result = await this.reservationModel.findById(id).exec();
 		if (!result) {
 			throw new NotFoundException(`Reservation with ID ${id} not found`);
 		}
+		const isAuthor = result.userId.toString() === user.id;
+		const isAdmin = user.role === UserRoleEnum.ADMIN;
+
+		// Only the author of the reservation or an admin can delete it
+		if (!isAuthor && !isAdmin) {
+			throw new ForbiddenException("You do not have permission to delete this reservation");
+		}
+
+		await result.deleteOne().exec();
+
 		const responseDto = plainToInstance(ResponseReservationDto, result, {
 			excludeExtraneousValues: true,
 		});
@@ -218,4 +240,92 @@ export class ReservationsService {
 	// 		conflictingDates: conflicts.map((res): Date => res.checkInDate),
 	// 	};
 	// }
+
+	public async getReservationStats(
+		year: number,
+		month: number,
+	): Promise<{ roomNumber: number; reservationDaysCount: number }[]> {
+		if (year < 1900 || year > 2100) {
+			throw new BadRequestException("Year must be between 1900 and 2100");
+		}
+
+		if (month < 1 || month > 12) {
+			throw new BadRequestException("Month must be between 1 and 12");
+		}
+
+		const firstDayOfMonth = new Date(year, month - 1, 1);
+		const lastDayOfMonth = new Date(year, month, 0, 23, 59, 59, 999); // Last millisecond of the month
+
+		const stats = await this.reservationModel.db
+			.collection("rooms")
+			.aggregate([
+				// Stage 1: Lookup reservations that overlap the month for each room
+				{
+					$lookup: {
+						from: "reservations",
+						let: { roomId: "$_id" },
+						pipeline: [
+							{
+								$match: {
+									$expr: {
+										$and: [
+											{ $eq: ["$room", "$$roomId"] },
+											{ $lte: ["$checkInDate", lastDayOfMonth] },
+											{ $gte: ["$checkOutDate", firstDayOfMonth] },
+										],
+									},
+								},
+							},
+							// Compute effective dates for each reservation
+							{
+								$project: {
+									effectiveStart: { $max: ["$checkInDate", firstDayOfMonth] },
+									effectiveEnd: { $min: ["$checkOutDate", lastDayOfMonth] },
+								},
+							},
+							// Compute reservedDays for each reservation
+							{
+								$project: {
+									reservedDays: {
+										$max: [
+											0,
+											{
+												$round: [
+													{
+														$divide: [
+															{ $subtract: ["$effectiveEnd", "$effectiveStart"] },
+															1000 * 60 * 60 * 24,
+														],
+													},
+													0,
+												],
+											},
+										],
+									},
+								},
+							},
+						],
+						as: "reservations",
+					},
+				},
+				// Stage 2: Group by roomNumber and sum reservedDays from all reservations
+				{
+					$project: {
+						roomNumber: 1,
+						reservationDaysCount: { $sum: "$reservations.reservedDays" },
+					},
+				},
+				// Stage 3: Shape the output
+				{
+					$project: {
+						roomNumber: 1,
+						reservationDaysCount: 1,
+						_id: 0,
+					},
+				},
+			])
+			.toArray();
+
+		return stats as { roomNumber: number; reservationDaysCount: number }[];
+	}
 }
