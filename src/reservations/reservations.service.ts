@@ -211,7 +211,6 @@ export class ReservationsService {
 
 		await result.deleteOne().exec();
 
-		// await this.telegramService.sendMessage(`Reservation deleted: ${JSON.stringify(result._id.toString())}`);
 		await this.telegramService.sendMessage(`Reservation deleted: ${JSON.stringify(result, null, 2)}`);
 
 		const responseDto = plainToInstance(ResponseReservationDto, result, {
