@@ -28,8 +28,7 @@ WORKDIR /app
 COPY package.json package.json
 # COPY package-lock.json package-lock.json
 
-RUN npm install
-RUN npm prune --production
+RUN npm install --production
 
 # ---- Runtime image ----
 FROM node:22-alpine AS runtime
