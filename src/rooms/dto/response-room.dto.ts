@@ -29,7 +29,7 @@ export class ResponseRoomDto {
 	public hasSeaView!: boolean;
 
 	@Expose()
-	public images!: Array<string>;
+	public images?: Array<string>;
 
 	//   @Expose()
 	//   public maxOccupancy!: number;
