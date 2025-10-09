@@ -61,7 +61,7 @@ export class FilesService {
 			}
 		}
 
-		// write file to disk asyncronously
+		// write file to disk asynchronously
 		await fs.promises.writeFile(filePath, bufferToWrite);
 
 		// create an interface for the returned file
