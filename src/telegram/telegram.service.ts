@@ -23,8 +23,6 @@ export class TelegramService {
 	}
 
 	public async sendMessage(text: string, chatId: number | string = this.chatId): Promise<void> {
-		// from json string to beautified json string
-		// const beautifiedText = JSON.stringify(JSON.parse(text), null, 2);
 		try {
 			await this.bot.telegram.sendMessage(chatId, text);
 		} catch (error) {
