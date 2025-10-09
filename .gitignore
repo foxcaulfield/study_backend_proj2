@@ -4,3 +4,4 @@ dist
 swagger*
 .vscode
 uploads
+.env

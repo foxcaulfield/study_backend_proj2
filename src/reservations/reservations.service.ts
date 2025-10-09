@@ -15,6 +15,7 @@ import { plainToInstance } from "class-transformer";
 import { RoomsService } from "src/rooms/rooms.service";
 import { ResponseUserDto } from "src/users/dto/response-user.dto";
 import { UserRoleEnum } from "src/users/user.model";
+import { TelegramService } from "src/telegram/telegram.service";
 // import { Room, type RoomModelType } from "src/rooms/room.model";
 
 @Injectable()
@@ -25,6 +26,7 @@ export class ReservationsService {
 		// @InjectModel(Room.name)
 		// private readonly roomModel: RoomModelType,
 		private readonly roomService: RoomsService,
+		private readonly telegramService: TelegramService,
 	) {}
 
 	private toResponseDto(entity: ReservationDocument): ResponseReservationDto;
@@ -107,6 +109,8 @@ export class ReservationsService {
 
 		await reservation.save();
 
+		await this.telegramService.sendMessage(this.formatReservationMessage("created", reservation));
+
 		return this.toResponseDto(reservation);
 	}
 
@@ -183,9 +187,11 @@ export class ReservationsService {
 			.exec();
 
 		if (!updatedReservation) {
-			// Эта строка должна быть недостижима после первой проверки, но для безопасности оставим
+			// This line should be unreachable after the first check, but added for type safety
 			throw new NotFoundException(`Reservation with ID ${id} not found after update`);
 		}
+
+		await this.telegramService.sendMessage(this.formatReservationMessage("updated", updatedReservation));
 
 		return this.toResponseDto(updatedReservation);
 	}
@@ -204,6 +210,8 @@ export class ReservationsService {
 		}
 
 		await result.deleteOne().exec();
+
+		await this.telegramService.sendMessage(this.formatReservationMessage("deleted", result));
 
 		const responseDto = plainToInstance(ResponseReservationDto, result, {
 			excludeExtraneousValues: true,
@@ -327,5 +335,19 @@ export class ReservationsService {
 			.toArray();
 
 		return stats as { roomNumber: number; reservationDaysCount: number }[];
+	}
+
+	private formatReservationMessage(
+		action: "created" | "updated" | "deleted",
+		reservation: ReservationDocument,
+	): string {
+		return [
+			`🛏️ Reservation ${action}`,
+			`Room: ${reservation.room.toString()}`,
+			`Check-in: ${reservation.checkInDate.toISOString().slice(0, 10)}`,
+			`Check-out: ${reservation.checkOutDate.toISOString().slice(0, 10)}`,
+			`User: ${reservation.userId.toString()}`,
+			`ID: ${reservation._id.toString()}`,
+		].join("\n");
 	}
 }
