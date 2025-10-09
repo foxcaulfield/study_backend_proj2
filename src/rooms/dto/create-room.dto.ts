@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsBoolean, Min, Max, IsOptional } from "class-validator";
+import { IsEnum, IsInt, IsBoolean, Min, Max, IsOptional, IsString, IsArray } from "class-validator";
 import { RoomTypeEnum } from "../room.model";
 
 // export class AmenityDto {
@@ -25,6 +25,11 @@ export class CreateRoomDto {
 	@IsBoolean()
 	@IsOptional()
 	public hasSeaView?: boolean;
+
+	@IsOptional()
+	@IsArray()
+	@IsString({ each: true })
+	public images?: Array<string>;
 
 	//   @IsInt()
 	//   @Min(1)
